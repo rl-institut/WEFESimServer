@@ -25,4 +25,4 @@ WORKDIR /fastapi_app
 EXPOSE 5001
 
 # run the app server, the last argument match the app variable in the webapp.py file
-CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "fastapi_app.webapp:app", "--workers", "2", "--timeout", "60"]
+CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "webapp:app", "--workers", "2", "--timeout", "60"]
