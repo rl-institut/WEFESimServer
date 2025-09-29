@@ -19,6 +19,9 @@ COPY fastapi_app/ /fastapi_app
 RUN useradd --create-home appuser
 RUN chown -R appuser /fastapi_app
 USER appuser
+
+RUN mkdir -p /fastapi_app/shared
+
 WORKDIR /fastapi_app
 
 # expose the app port
