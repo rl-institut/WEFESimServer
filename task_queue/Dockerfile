@@ -1,4 +1,4 @@
-FROM python:3.8-slim
+FROM python:3.9-slim
 
 ARG SIMULATION_VERSION
 ARG SIMULATION_PACKAGE
@@ -15,7 +15,8 @@ COPY task_queue/requirements.txt /tmp/
 
 RUN python -m pip install --upgrade pip
 RUN pip install -r /tmp/requirements.txt
-RUN echo SIMULATION_PACKAGE
+RUN echo $SIMULATION_PACKAGE
+#RUN pip install "$SIMULATION_PACKAGE $SIMULATION_VERSION" gunicorn
 RUN pip install "oemof-tabular-plugins $SIMULATION_VERSION" gunicorn
 
 run echo $(pip freeze)
