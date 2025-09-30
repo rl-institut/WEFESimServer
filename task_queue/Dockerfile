@@ -1,4 +1,4 @@
-FROM python:3.10-slim-bookworm
+FROM python:3.8-slim
 
 ARG SIMULATION_VERSION
 
@@ -14,7 +14,7 @@ COPY task_queue/requirements.txt /tmp/
 
 RUN python -m pip install --upgrade pip
 RUN pip install -r /tmp/requirements.txt
-RUN pip install "oemof-tabular-plugins $SIMULATION_VERSION" gunicorn
+RUN pip install "$SIMULATION_PACKAGE $SIMULATION_VERSION" gunicorn
 
 run echo $(pip freeze)
 COPY task_queue/ /queue
