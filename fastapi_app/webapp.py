@@ -1,7 +1,7 @@
 import os
 import json
 import io
-from fastapi import FastAPI, Request, Response, File, UploadFile
+from fastapi import FastAPI, Request, Response, File, UploadFile, HTTPException
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -9,19 +9,10 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import StreamingResponse
 
 
-from multi_vector_simulator import version as mvs_version
+DEV_VERSION = os.environ.get("DEV_VERSION", "no_version")
+PROD_VERSION = os.environ.get("PROD_VERSION", "no_version")
 
-from multi_vector_simulator.utils.constants_json_strings import (
-    SIMULATION_SETTINGS,
-    OUTPUT_LP_FILE,
-    VALUE,
-    UNIT,
-)
-
-MVS_DEV_VERSION = os.environ.get("MVS_DEV_VERSION", mvs_version.version_num)
-MVS_OPEN_PLAN_VERSION = os.environ.get("MVS_OPEN_PLAN_VERSION", mvs_version.version_num)
-
-MVS_SERVER_VERSIONS = {"dev": MVS_DEV_VERSION, "open_plan": MVS_OPEN_PLAN_VERSION}
+SERVER_VERSIONS = {"dev": DEV_VERSION, "prod": PROD_VERSION}
 
 try:
     from worker import app as celery_app
@@ -63,14 +54,17 @@ def index(request: Request) -> Response:
         "index.html",
         {
             "request": request,
-            "mvs_dev_version": MVS_DEV_VERSION,
-            "mvs_open_plan_version": MVS_OPEN_PLAN_VERSION,
+            "dev_version": DEV_VERSION,
+            "prod_version": PROD_VERSION,
         },
     )
 
 
 async def simulate_json_variable(request: Request, queue: str = "dev"):
     """Receive mvs simulation parameter in json post request and send it to simulator"""
+
+    # TODO use jsonschema to verify metadata and data and then use the content of metadata to check data
+
     input_dict = await request.json()
 
     # send the task to celery
@@ -87,9 +81,9 @@ async def simulate_json_variable_dev(request: Request):
     return await simulate_json_variable(request, queue="dev")
 
 
-@app.post("/sendjson/openplan")
-async def simulate_json_variable_open_plan(request: Request):
-    return await simulate_json_variable(request, queue="open_plan")
+@app.post("/sendjson/prod")
+async def simulate_json_variable_prod(request: Request):
+    return await simulate_json_variable(request, queue="prod")
 
 
 @app.post("/uploadjson/dev")
@@ -104,8 +98,8 @@ def simulate_uploaded_json_files_dev(
     return run_simulation(request, input_json=json_content)
 
 
-@app.post("/uploadjson/open_plan")
-def simulate_uploaded_json_files_open_plan(
+@app.post("/uploadjson/prod")
+def simulate_uploaded_json_files_prod(
     request: Request, json_file: UploadFile = File(...)
 ):
     """Receive mvs simulation parameter in json post request and send it to simulator
@@ -113,7 +107,7 @@ def simulate_uploaded_json_files_open_plan(
     argument of this function
     """
     json_content = jsonable_encoder(json_file.file.read())
-    return run_simulation_open_plan(request, input_json=json_content)
+    return run_simulation_prod(request, input_json=json_content)
 
 
 def run_simulation(request: Request, input_json=None, queue="dev") -> Response:
@@ -142,9 +136,9 @@ def run_simulation_dev(request: Request, input_json=None) -> Response:
     return run_simulation(request, input_json, queue="dev")
 
 
-@app.post("/run_simulation_open_plan")
-def run_simulation_open_plan(request: Request, input_json=None) -> Response:
-    return run_simulation(request, input_json, queue="open_plan")
+@app.post("/run_simulation_prod")
+def run_simulation_prod(request: Request, input_json=None) -> Response:
+    return run_simulation(request, input_json, queue="prod")
 
 
 @app.get("/check/{task_id}")
@@ -152,7 +146,7 @@ async def check_task(task_id: str) -> JSONResponse:
     res = celery_app.AsyncResult(task_id)
     task = {
         "server_info": None,
-        "mvs_version": None,
+        "otp_version": None,
         "id": task_id,
         "status": res.state,
         "results": None,
@@ -164,7 +158,7 @@ async def check_task(task_id: str) -> JSONResponse:
         results_as_dict = json.loads(res.result)
         server_info = results_as_dict.pop("SERVER")
         task["server_info"] = server_info
-        task["mvs_version"] = MVS_SERVER_VERSIONS.get(server_info, "unknown")
+        task["otp_version"] = "0.0.1"# SERVER_VERSIONS.get(server_info, "unknown")
         task["results"] = json.dumps(results_as_dict)
         if "ERROR" in task["results"]:
             task["status"] = "ERROR"
@@ -178,7 +172,7 @@ async def get_lp_file(task_id: str) -> Response:
     res = celery_app.AsyncResult(task_id)
     task = {
         "server_info": None,
-        "mvs_version": mvs_version,
+        "otp_version": None,
         "id": task_id,
         "status": res.state,
         "results": None,
@@ -191,7 +185,7 @@ async def get_lp_file(task_id: str) -> Response:
         results_as_dict = json.loads(res.result)
         server_info = results_as_dict.pop("SERVER")
         task["server_info"] = server_info
-        task["mvs_version"] = MVS_SERVER_VERSIONS.get(server_info, "unknown")
+        task["otp_version"] = SERVER_VERSIONS.get(server_info, "unknown")
         task["results"] = json.dumps(results_as_dict)
         if "ERROR" in task["results"]:
             task["status"] = "ERROR"
