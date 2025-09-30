@@ -13,6 +13,8 @@ from oemof_tabular_plugins.datapackage import rebuild_single_json
 from oemof_tabular_plugins.script import compute_scenario
 from oemof_tabular_plugins.wefe import WEFE_TYPEMAP as TYPEMAP
 
+SIMULATION_VERSION = os.environ.get("SIMULATION_VERSION", "no_version")
+
 logger = get_task_logger(__name__)
 CELERY_BROKER_URL = (os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379"),)
 CELERY_RESULT_BACKEND = os.environ.get(
@@ -26,7 +28,7 @@ app = Celery(CELERY_TASK_NAME, broker=CELERY_BROKER_URL, backend=CELERY_RESULT_B
 
 def __run_simulation(simulation_input):
     logger.info("Start new simulation")
-    simulation_output = {"SERVER" : CELERY_TASK_NAME}
+    simulation_output = {"SERVER" : CELERY_TASK_NAME, "VERSION": SIMULATION_VERSION}
 
     with tempfile.TemporaryDirectory(prefix="dp_") as td:
         temp_path = Path(td)
@@ -103,4 +105,8 @@ def __run_simulation(simulation_input):
 @app.task(name=f"{CELERY_TASK_NAME}.run_simulation")
 def run_simulation(simulation_input: dict,) -> dict:
    return __run_simulation(simulation_input)
+
+@app.task(name=f"{CELERY_TASK_NAME}.get_version")
+def get_version() -> str:
+   return SIMULATION_VERSION
 

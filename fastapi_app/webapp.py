@@ -7,12 +7,8 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import StreamingResponse
+from celery.exceptions import TimeoutError
 
-
-DEV_VERSION = os.environ.get("DEV_VERSION", "no_version")
-PROD_VERSION = os.environ.get("PROD_VERSION", "no_version")
-
-SERVER_VERSIONS = {"dev": DEV_VERSION, "prod": PROD_VERSION}
 
 try:
     from worker import app as celery_app
@@ -49,15 +45,24 @@ templates = Jinja2Templates(directory=os.path.join(SERVER_ROOT, "templates"))
 
 @app.get("/")
 def index(request: Request) -> Response:
-
     return templates.TemplateResponse(
         "index.html",
         {
             "request": request,
-            "dev_version": DEV_VERSION,
-            "prod_version": PROD_VERSION,
+            "dev_version": get_worker_version("dev"),
+            "prod_version": get_worker_version("prod"),
         },
     )
+
+def get_worker_version(queue):
+    task = celery_app.send_task(
+        f"{queue}.get_version", queue=queue, kwargs={}
+    )
+    try:
+        version = task.get(timeout=0.5)
+    except TimeoutError:
+        version = f"{queue} worker not available"
+    return version
 
 
 async def simulate_json_variable(request: Request, queue: str = "dev"):
@@ -146,7 +151,7 @@ async def check_task(task_id: str) -> JSONResponse:
     res = celery_app.AsyncResult(task_id)
     task = {
         "server_info": None,
-        "otp_version": None,
+        "simulation_version": None,
         "id": task_id,
         "status": res.state,
         "results": None,
@@ -156,9 +161,8 @@ async def check_task(task_id: str) -> JSONResponse:
     else:
         task["status"] = "DONE"
         results_as_dict = json.loads(res.result)
-        server_info = results_as_dict.pop("SERVER")
-        task["server_info"] = server_info
-        task["otp_version"] = "0.0.1"# SERVER_VERSIONS.get(server_info, "unknown")
+        task["server_info"] = results_as_dict.pop("SERVER")
+        task["simulation_version"] = results_as_dict.pop("VERSION")
         task["results"] = json.dumps(results_as_dict)
         if "ERROR" in task["results"]:
             task["status"] = "ERROR"
@@ -172,7 +176,7 @@ async def get_lp_file(task_id: str) -> Response:
     res = celery_app.AsyncResult(task_id)
     task = {
         "server_info": None,
-        "otp_version": None,
+        "simulation_version": None,
         "id": task_id,
         "status": res.state,
         "results": None,
@@ -183,9 +187,8 @@ async def get_lp_file(task_id: str) -> Response:
     else:
         task["status"] = "DONE"
         results_as_dict = json.loads(res.result)
-        server_info = results_as_dict.pop("SERVER")
-        task["server_info"] = server_info
-        task["otp_version"] = SERVER_VERSIONS.get(server_info, "unknown")
+        task["server_info"] = results_as_dict.pop("SERVER")
+        task["simulation_version"] = results_as_dict.pop("VERSION")
         task["results"] = json.dumps(results_as_dict)
         if "ERROR" in task["results"]:
             task["status"] = "ERROR"
