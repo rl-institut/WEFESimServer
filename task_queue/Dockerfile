@@ -1,6 +1,7 @@
 FROM python:3.8-slim
 
 ARG SIMULATION_VERSION
+ARG SIMULATION_PACKAGE
 
 ENV CELERY_BROKER_URL redis://redis:6379/0
 ENV CELERY_RESULT_BACKEND redis://redis:6379/0
@@ -14,7 +15,8 @@ COPY task_queue/requirements.txt /tmp/
 
 RUN python -m pip install --upgrade pip
 RUN pip install -r /tmp/requirements.txt
-RUN pip install "$SIMULATION_PACKAGE $SIMULATION_VERSION" gunicorn
+RUN echo SIMULATION_PACKAGE
+RUN pip install "oemof-tabular-plugins $SIMULATION_VERSION" gunicorn
 
 run echo $(pip freeze)
 COPY task_queue/ /queue
