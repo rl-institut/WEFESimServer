@@ -1,6 +1,6 @@
-FROM python:3.12.9-slim-bookworm
+FROM python:3.10.12-slim-bookworm
 
-ARG PROD_VERSION
+ARG SIMULATION_VERSION
 
 ENV CELERY_BROKER_URL redis://redis:6379/0
 ENV CELERY_RESULT_BACKEND redis://redis:6379/0
@@ -14,7 +14,7 @@ COPY task_queue/requirements.txt /tmp/
 
 RUN python -m pip install --upgrade pip
 RUN pip install -r /tmp/requirements.txt
-RUN pip install oemof-tabular-plugins $PROD_VERSION
+RUN pip install "oemof-tabular-plugins $SIMULATION_VERSION" gunicorn
 
 run echo $(pip freeze)
 COPY task_queue/ /queue
