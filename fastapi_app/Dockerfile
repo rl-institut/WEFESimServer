@@ -1,4 +1,4 @@
-FROM tiangolo/uvicorn-gunicorn:python3.11
+FROM tiangolo/uvicorn-gunicorn:python3.10
 ARG PROD_VERSION
 
 ENV CELERY_BROKER_URL redis://redis:6379/0
@@ -10,7 +10,8 @@ COPY fastapi_app/requirements.txt /tmp/
 RUN python -m pip install --upgrade pip
 RUN pip install -r /tmp/requirements.txt
 # install multi-vector-simulator's version pinned in docker-compose.yml file
-RUN pip install oemof-tabular-plugins $PROD_VERSION gunicorn
+RUN echo pip install "oemof-tabular-plugins $PROD_VERSION" gunicorn
+RUN pip install "oemof-tabular-plugins $PROD_VERSION" gunicorn
 
 
 COPY fastapi_app/ /fastapi_app

@@ -1,5 +1,5 @@
 fastapi
-aiofiles
+#aiofiles
 jinja2==3.0
 uvicorn
 celery
