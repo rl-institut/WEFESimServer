@@ -61,6 +61,7 @@ def __run_simulation(simulation_input):
         moo = False
 
         # MOO weight factors
+        # TODO these need to come from the inputs
         moo_wf = {
             "wf_cost": 15,
             "wf_ghg": 1,
@@ -84,6 +85,7 @@ def __run_simulation(simulation_input):
                 moo=moo,
                 moo_wf=moo_wf,
                 dash_app=False,
+                skip_infer_datapackage_metadata=True,
             )
             logger.info(f"Simulation of {scenario} finished")
             df = calculator.df_results
