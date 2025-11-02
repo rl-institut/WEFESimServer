@@ -161,8 +161,12 @@ async def check_task(task_id: str) -> JSONResponse:
     else:
         task["status"] = "DONE"
         results_as_dict = json.loads(res.result)
-        task["server_info"] = results_as_dict.pop("SERVER")
-        task["simulation_version"] = results_as_dict.pop("VERSION")
+        try:
+            task["server_info"] = results_as_dict.pop("SERVER")
+            task["simulation_version"] = results_as_dict.pop("VERSION")
+        except KeyError:
+            for k in ["server_info", "simulation_version"]:
+                task[k] = "Error: Could not retrieve simulation metadata"
         task["results"] = json.dumps(results_as_dict)
         if "ERROR" in task["results"]:
             task["status"] = "ERROR"
