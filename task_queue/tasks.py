@@ -72,6 +72,7 @@ def __run_simulation(simulation_input):
         # set paths for scenario and result directories
         results_path = dp_path / "results"
         results_path.mkdir()
+        print(results_path.resolve())
         try:
             calculator = compute_scenario(
                 dp_path,
@@ -82,7 +83,7 @@ def __run_simulation(simulation_input):
                 typemap=TYPEMAP,
                 moo=moo,
                 moo_wf=moo_wf,
-                dash_app=False,
+                dash_app=True,
                 skip_infer_datapackage_metadata=True,
             )
             logger.info(f"Simulation of {scenario} finished")
@@ -120,4 +121,22 @@ def run_simulation(simulation_input: dict,) -> dict:
 @app.task(name=f"{CELERY_TASK_NAME}.get_version")
 def get_version() -> str:
    return SIMULATION_VERSION
+
+if __name__ == "__main__":
+    with open('datapackage_export.json', 'r') as file:
+        dp = json.load(file)
+
+    # Run simulation locally
+    result = run_simulation(dp)
+
+    # If Celery decorator wraps the output inside AsyncResult, unwrap it
+    if hasattr(result, "get"):
+        result = result.get()
+
+    # Store the exact server output
+    out_path = Path("debug_simulation_output.json")
+    out_path.write_text(json.dumps(result, indent=2))
+
+    print("Simulation results saved to:", out_path.resolve())
+
 
