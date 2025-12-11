@@ -35,6 +35,9 @@ def __run_simulation(simulation_input):
         dp_path = rebuild_single_json(simulation_input, temp_path)
         logger.debug("Converted datapackage in JSON format back to datapackage")
 
+        # Extract parameter block
+        parameters = simulation_input.get("parameters", {})
+
         # TODO set this a default pass those parameters in the json file
         # Regionalized Characterisation Factor for Available water remaining (AWARE) - might move later;
         # this parameter is needed to calculate the regionalized water scarcity footprint in moo.
@@ -57,17 +60,12 @@ def __run_simulation(simulation_input):
             "resource_cost",
             "annuity"
         ]
-        # set whether the multi-objective optimization should be performed
-        moo = False
 
-        # MOO weight factors
-        # TODO these need to come from the inputs
-        moo_wf = {
-            "wf_cost": 15,
-            "wf_ghg": 1,
-            "wf_lr": 343434,
-            "wf_wf": 0,
-        }
+        # Extract user-defined MOO weights
+        moo_wf = parameters.get("moo_wf")
+
+        # Determine if MOO should be active
+        moo = moo_wf is not None
 
         # -------------- RUNNING THE SCENARIOS --------------
         scenario = dp_path.name
