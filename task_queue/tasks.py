@@ -38,12 +38,11 @@ def __run_simulation(simulation_input):
         # Extract parameter block
         parameters = simulation_input.get("parameters", {})
 
-        # TODO set this a default pass those parameters in the json file
-        # Regionalized Characterisation Factor for Available water remaining (AWARE) - might move later;
-        # this parameter is needed to calculate the regionalized water scarcity footprint in moo.
+        # ------------------- ECONOMICS --------------------
         # weighted average cost of capital (WACC) - might move later
         # this parameter is needed if CAPEX, OPEX fix and lifetime are included
-        wacc = 0.06
+        # set 0.06 as default
+        wacc = parameters.get("wacc", 0.06)
 
         # -------------- ADDITIONAL FUNCTIONALITIES (OEMOF-TABULAR-PLUGINS) --------------
         # include the custom attribute parameters to be included in the model
@@ -62,10 +61,11 @@ def __run_simulation(simulation_input):
         ]
 
         # Extract user-defined MOO weights
-        moo_wf = parameters.get("moo_wf")
+        moo_wf = parameters.get("moo_wf", None)
 
         # Determine if MOO should be active
-        moo = moo_wf is not None
+        wf_cost = moo_wf.get("wf_cost", None)
+        moo = moo_wf is not None and wf_cost is not None and float(wf_cost) != 1.0
 
         # -------------- RUNNING THE SCENARIOS --------------
         scenario = dp_path.name
