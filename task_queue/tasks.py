@@ -86,9 +86,8 @@ def __run_simulation(simulation_input):
                 skip_infer_datapackage_metadata=True,
             )
             logger.info(f"Simulation of {scenario} finished")
-            df = calculator.df_results
-
-            simulation_output["results"] = df.to_json()
+            results = {"flows": calculator.df_results.to_json(orient="split"), "kpis": calculator.kpis.to_json(orient="split")}
+            simulation_output["results"] = results
         except Exception as e:
             logger.error(
                 "An exception occured in the simulation task: {}".format(
