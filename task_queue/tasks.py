@@ -86,8 +86,20 @@ def __run_simulation(simulation_input):
                 skip_infer_datapackage_metadata=True,
             )
             logger.info(f"Simulation of {scenario} finished")
-            results = {"flows": calculator.df_results.to_json(orient="split"), "kpis": calculator.kpis.to_json(orient="split")}
-            simulation_output["results"] = results
+            simulation_output["results"] = {
+                "df_results": calculator.df_results.to_json(orient="split"),
+                "kpis": calculator.kpis.to_json(orient="split") if calculator.kpis is not None else None,
+                "result_tables": {k: v.to_json(orient="split") for k, v in calculator.result_tables.items()},
+                "service_tables": {k: v.to_json(orient="split") for k, v in calculator.service_tables.items()},
+                "parameters_units": calculator.parameters_units,
+                "timeindex": list(calculator.timeindex),
+                "nodes": [
+                    {"type": n.__class__.__name__, "label": n.label,
+                     "inputs": [i.label for i in getattr(n, "inputs", [])],
+                     "outputs": [o.label for o in getattr(n, "outputs", [])]}
+                    for n in calculator.nodes
+                ],
+            }
         except Exception as e:
             logger.error(
                 "An exception occured in the simulation task: {}".format(
