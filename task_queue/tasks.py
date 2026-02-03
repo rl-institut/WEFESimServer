@@ -86,7 +86,7 @@ def __run_simulation(simulation_input):
                 skip_infer_datapackage_metadata=True,
             )
             logger.info(f"Simulation of {scenario} finished")
-            results = {"df_results": calculator.df_results.to_json(orient="split"), "dash_tables": calculator.dash_tables}
+            results = {"df_results": calculator.df_results.to_json(orient="split"), "dash_tables": json.dumps(calculator.dash_tables)}
             simulation_output["results"] = results
         except Exception as e:
             logger.error(
