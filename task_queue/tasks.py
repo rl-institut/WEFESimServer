@@ -8,7 +8,7 @@ from celery.utils.log import get_task_logger
 import tempfile
 import shutil
 from pathlib import Path
-from task_queue.utils import to_jsonable
+from utils import to_jsonable
 
 from oemof_tabular_plugins.datapackage import rebuild_single_json
 from oemof_tabular_plugins.script import compute_scenario
