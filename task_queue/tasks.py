@@ -8,6 +8,7 @@ from celery.utils.log import get_task_logger
 import tempfile
 import shutil
 from pathlib import Path
+from task_queue.utils import to_jsonable
 
 from oemof_tabular_plugins.datapackage import rebuild_single_json
 from oemof_tabular_plugins.script import compute_scenario
@@ -86,7 +87,7 @@ def __run_simulation(simulation_input):
                 skip_infer_datapackage_metadata=True,
             )
             logger.info(f"Simulation of {scenario} finished")
-            results = {"df_results": calculator.df_results.to_json(orient="split"), "dash_tables": json.dumps(calculator.dash_tables)}
+            results = {"df_results": calculator.df_results.to_json(orient="split"), "dash_tables": to_jsonable(calculator.dash_tables)}
             simulation_output["results"] = results
         except Exception as e:
             logger.error(
