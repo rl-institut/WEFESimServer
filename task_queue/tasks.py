@@ -53,7 +53,7 @@ def __run_simulation(simulation_input):
             "renewable_factor",
             "land_requirement_factor",
             "water_consumption_factor",
-            "indirect_water_consumption_factor"
+            "indirect_water_consumption_factor",
             "land_requirement",
             "water_footprint",
             "ghg_emissions",
@@ -62,7 +62,7 @@ def __run_simulation(simulation_input):
         ]
 
         # Extract user-defined MOO weights
-        moo_wf = parameters.get("moo_wf", None)
+        moo_wf = parameters.get("moo_wf", {})
 
         # Determine if MOO should be active
         wf_cost = moo_wf.get("wf_cost", None)
