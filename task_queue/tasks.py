@@ -8,6 +8,7 @@ from celery.utils.log import get_task_logger
 import tempfile
 import shutil
 from pathlib import Path
+from utils import to_jsonable
 
 from oemof_tabular_plugins.datapackage import rebuild_single_json
 from oemof_tabular_plugins.script import compute_scenario
@@ -52,7 +53,7 @@ def __run_simulation(simulation_input):
             "renewable_factor",
             "land_requirement_factor",
             "water_consumption_factor",
-            "indirect_water_consumption_factor"
+            "indirect_water_consumption_factor",
             "land_requirement",
             "water_footprint",
             "ghg_emissions",
@@ -61,7 +62,7 @@ def __run_simulation(simulation_input):
         ]
 
         # Extract user-defined MOO weights
-        moo_wf = parameters.get("moo_wf", None)
+        moo_wf = parameters.get("moo_wf", {})
 
         # Determine if MOO should be active
         wf_cost = moo_wf.get("wf_cost", None)
@@ -72,6 +73,7 @@ def __run_simulation(simulation_input):
         # set paths for scenario and result directories
         results_path = dp_path / "results"
         results_path.mkdir()
+        print(results_path.resolve())
         try:
             calculator = compute_scenario(
                 dp_path,
@@ -82,13 +84,12 @@ def __run_simulation(simulation_input):
                 typemap=TYPEMAP,
                 moo=moo,
                 moo_wf=moo_wf,
-                dash_app=False,
+                dash_app=True,
                 skip_infer_datapackage_metadata=True,
             )
             logger.info(f"Simulation of {scenario} finished")
-            df = calculator.df_results
-
-            simulation_output["results"] = df.to_json()
+            results = {"df_results": calculator.df_results.to_json(orient="split", date_format="iso"), "dash_tables": to_jsonable(calculator.dash_tables)}
+            simulation_output["results"] = results
         except Exception as e:
             logger.error(
                 "An exception occured in the simulation task: {}".format(
@@ -109,4 +110,22 @@ def run_simulation(simulation_input: dict,) -> dict:
 @app.task(name=f"{CELERY_TASK_NAME}.get_version")
 def get_version() -> str:
    return SIMULATION_VERSION
+
+if __name__ == "__main__":
+    with open('datapackage_export.json', 'r') as file:
+        dp = json.load(file)
+
+    # Run simulation locally
+    result = run_simulation(dp)
+
+    # If Celery decorator wraps the output inside AsyncResult, unwrap it
+    if hasattr(result, "get"):
+        result = result.get()
+
+    # Store the exact server output
+    out_path = Path("debug_simulation_output.json")
+    out_path.write_text(json.dumps(result, indent=2))
+
+    print("Simulation results saved to:", out_path.resolve())
+
 
