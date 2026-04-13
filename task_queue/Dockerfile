@@ -2,7 +2,6 @@ FROM python:3.9-slim
 
 ARG SIMULATION_VERSION
 ARG SIMULATION_PACKAGE
-ARG CACHE_BUST=1
 
 ENV CELERY_BROKER_URL redis://redis:6379/0
 ENV CELERY_RESULT_BACKEND redis://redis:6379/0
@@ -18,6 +17,7 @@ RUN python -m pip install --upgrade pip
 RUN pip install -r /tmp/requirements.txt
 RUN echo $SIMULATION_PACKAGE
 #RUN pip install "$SIMULATION_PACKAGE $SIMULATION_VERSION" gunicorn
+ARG CACHE_BUST=2
 RUN pip install --no-cache-dir "oemof-tabular-plugins $SIMULATION_VERSION" gunicorn
 
 run echo $(pip freeze)
