@@ -17,7 +17,8 @@ RUN python -m pip install --upgrade pip
 RUN pip install -r /tmp/requirements.txt
 RUN echo $SIMULATION_PACKAGE
 #RUN pip install "$SIMULATION_PACKAGE $SIMULATION_VERSION" gunicorn
-RUN pip install "oemof-tabular-plugins $SIMULATION_VERSION" gunicorn
+ARG CACHE_BUST=1
+RUN pip install --no-cache-dir "oemof-tabular-plugins $SIMULATION_VERSION" gunicorn
 
 run echo $(pip freeze)
 COPY task_queue/ /queue
